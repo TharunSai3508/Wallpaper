@@ -1,0 +1,3 @@
+<wallpaper xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/video_wallpaper_service_name"
+    android:settingsActivity="" />
