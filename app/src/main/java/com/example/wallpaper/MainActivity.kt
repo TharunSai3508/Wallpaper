@@ -145,14 +145,17 @@ private fun MediaGridItem(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
-    val dynamicHeight by rememberSaveable(item.id) { mutableLongStateOf((170..310).random().toLong()) }
+    val dynamicHeight = rememberSaveable(item.id) {
+        (170..310).random()
+    }
+
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(dynamicHeight.dp)
+            .height(dynamicHeight.toInt().dp)
             .combinedClickable(onClick = onTap, onLongClick = { showMenu = true })
     ) {
         Box(Modifier.fillMaxSize()) {

@@ -5,6 +5,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 
+
+
 @Database(entities = [WallpaperMediaEntity::class], version = 1, exportSchema = false)
 @TypeConverters(MediaTypeConverters::class)
 abstract class AppDatabase : RoomDatabase() {
