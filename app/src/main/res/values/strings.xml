@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Wallpaper</string>
+    <string name="video_wallpaper_service_name">Wallpaper Video Service</string>
+    <string name="gif_wallpaper_service_name">Wallpaper GIF Service</string>
+</resources>
