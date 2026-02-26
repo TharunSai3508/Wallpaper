@@ -69,6 +69,24 @@ class WallpaperSetter(private val context: Context) {
             retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
         } finally {
             retriever.release()
+import android.os.Build
+import com.example.wallpaper.data.MediaType
+import com.example.wallpaper.data.WallpaperMediaEntity
+import java.io.File
+
+class WallpaperSetter(private val context: Context) {
+
+    fun setWallpaper(activity: Activity, item: WallpaperMediaEntity) {
+        when (item.mediaType) {
+            MediaType.IMAGE -> setStatic(item.filePath)
+            MediaType.GIF -> setGifLive(activity, item.filePath)
+            MediaType.VIDEO -> setVideoLive(activity, item.filePath)
+        }
+    }
+
+    private fun setStatic(filePath: String) {
+        File(filePath).inputStream().use { input ->
+            WallpaperManager.getInstance(context).setStream(input)
         }
     }
 

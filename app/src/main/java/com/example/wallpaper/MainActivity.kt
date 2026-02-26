@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
@@ -44,10 +45,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -71,11 +74,20 @@ import com.example.wallpaper.wallpaper.WallpaperEditOptions
 import com.example.wallpaper.wallpaper.WallpaperSetter
 
 class MainActivity : ComponentActivity() {
+import com.example.wallpaper.wallpaper.WallpaperSetter
+
+class MainActivity : ComponentActivity() {
+
     private val viewModel by viewModels<MainViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { MaterialTheme { WallpaperHome(viewModel) } }
+        setContent {
+            MaterialTheme {
+                WallpaperHome(viewModel)
+            }
+        }
     }
 }
 
@@ -88,6 +100,10 @@ private fun WallpaperHome(viewModel: MainViewModel = viewModel()) {
     var pendingSetItem by remember { mutableStateOf<WallpaperMediaEntity?>(null) }
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris ->
         if (uris.isNotEmpty()) viewModel.import(uris)
     }
 
@@ -97,6 +113,9 @@ private fun WallpaperHome(viewModel: MainViewModel = viewModel()) {
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = { importLauncher.launch(arrayOf("image/*", "video/*", "image/gif")) }) {
+            FloatingActionButton(onClick = {
+                importLauncher.launch(arrayOf("image/*", "video/*", "image/gif"))
+            }) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 14.dp)) {
                     Icon(Icons.Default.Image, contentDescription = null)
                     Text("Import")
@@ -107,6 +126,9 @@ private fun WallpaperHome(viewModel: MainViewModel = viewModel()) {
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Adaptive(160.dp),
             modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
             contentPadding = PaddingValues(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalItemSpacing = 12.dp
@@ -116,6 +138,7 @@ private fun WallpaperHome(viewModel: MainViewModel = viewModel()) {
                     item = item,
                     onTap = { viewModel.openItem(item) },
                     onSetWallpaper = { pendingSetItem = item },
+                    onSetWallpaper = { wallpaperSetter.setWallpaper(activity, item) },
                     onDelete = { viewModel.delete(item) }
                 )
             }
@@ -137,6 +160,7 @@ private fun WallpaperHome(viewModel: MainViewModel = viewModel()) {
                     wallpaperSetter.setWallpaper(activity, item, options)
                     pendingSetItem = null
                 }
+                onSetWallpaper = { wallpaperSetter.setWallpaper(activity, item) }
             )
         }
     }
@@ -153,6 +177,10 @@ private fun MediaGridItem(
     var showMenu by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
     val dynamicHeight by rememberSaveable(item.id) { mutableIntStateOf((170..310).random()) }
+    val dynamicHeight = rememberSaveable(item.id) {
+        (170..310).random()
+    }
+
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -160,12 +188,26 @@ private fun MediaGridItem(
         modifier = Modifier
             .fillMaxWidth()
             .height(dynamicHeight.dp)
+            .height(dynamicHeight.toInt().dp)
             .combinedClickable(onClick = onTap, onLongClick = { showMenu = true })
     ) {
         Box(Modifier.fillMaxSize()) {
             when (item.mediaType) {
                 MediaType.VIDEO -> VideoPreview(uri = item.filePath.toUri(), muted = true, playWhenReady = true, modifier = Modifier.fillMaxSize())
                 MediaType.IMAGE, MediaType.GIF -> AsyncImage(model = item.filePath, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                MediaType.VIDEO -> VideoPreview(
+                    uri = item.filePath.toUri(),
+                    muted = true,
+                    playWhenReady = true,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                MediaType.IMAGE, MediaType.GIF -> AsyncImage(
+                    model = item.filePath,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
             Text(
@@ -179,6 +221,41 @@ private fun MediaGridItem(
                 DropdownMenuItem(text = { Text("Set as wallpaper") }, leadingIcon = { Icon(Icons.Default.Image, null) }, onClick = { showMenu = false; onSetWallpaper() })
                 DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { showMenu = false; onDelete() })
                 DropdownMenuItem(text = { Text("Info") }, leadingIcon = { Icon(Icons.Default.Info, null) }, onClick = { showMenu = false; showInfo = true })
+                modifier = Modifier
+                    .padding(8.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Set as wallpaper") },
+                    leadingIcon = { Icon(Icons.Default.Image, null) },
+                    onClick = {
+                        showMenu = false
+                        onSetWallpaper()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    leadingIcon = { Icon(Icons.Default.Delete, null) },
+                    onClick = {
+                        showMenu = false
+                        onDelete()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Info") },
+                    leadingIcon = { Icon(Icons.Default.Info, null) },
+                    onClick = {
+                        showMenu = false
+                        showInfo = true
+                    }
+                )
             }
         }
     }
@@ -283,6 +360,47 @@ private fun WallpaperSetDialog(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
+            text = {
+                Column {
+                    Text("Type: ${item.mediaType}")
+                    Text("File: ${item.filePath}")
+                    Text("Added: ${item.dateAddedEpochMs}")
+                }
+            }
+        )
+    }
+
+}
+
+@Composable
+private fun FullScreenPreview(
+    item: WallpaperMediaEntity,
+    onDismiss: () -> Unit,
+    onSetWallpaper: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().height(420.dp)) {
+                    when (item.mediaType) {
+                        MediaType.VIDEO -> VideoPreview(
+                            uri = item.filePath.toUri(),
+                            muted = true,
+                            playWhenReady = true,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        MediaType.IMAGE, MediaType.GIF -> AsyncImage(
+                            model = item.filePath,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
+                Text("Path: ${item.filePath}")
+                Text("Added: ${item.dateAddedEpochMs}")
             }
         },
         confirmButton = {
@@ -300,5 +418,14 @@ private fun WallpaperSetDialog(
             }) { Text("Apply") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+                onSetWallpaper()
+                onDismiss()
+            }) {
+                Text("Set wallpaper")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        }
     )
 }
